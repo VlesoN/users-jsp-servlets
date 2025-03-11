@@ -6,9 +6,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.UserService;
-
 import java.io.IOException;
 import jakarta.servlet.ServletException;
+
 
 @WebServlet("/users")
 public class UserServlet extends HttpServlet {
@@ -48,4 +48,5 @@ public class UserServlet extends HttpServlet {
 
         response.sendRedirect("users");
     }
+
 }
