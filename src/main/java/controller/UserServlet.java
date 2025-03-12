@@ -6,7 +6,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.UserService;
+
 import java.io.IOException;
+
 import jakarta.servlet.ServletException;
 
 
@@ -14,39 +16,47 @@ import jakarta.servlet.ServletException;
 public class UserServlet extends HttpServlet {
     private UserService userService = new UserService();
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String action = request.getParameter("action");
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String action = req.getParameter("action");
 
         if ("add".equals(action)) {
-            request.getRequestDispatcher("add.jsp").forward(request, response);
+            req.getRequestDispatcher("add.jsp").forward(req, resp);
         } else if ("edit".equals(action)) {
-            int id = Integer.parseInt(request.getParameter("id"));
-            request.setAttribute("user", userService.getUserById(id));
-            request.getRequestDispatcher("edit.jsp").forward(request, response);
+            int id = Integer.parseInt(req.getParameter("id"));
+            req.setAttribute("user", userService.getUserById(id));
+            req.getRequestDispatcher("edit.jsp").forward(req, resp);
         } else if ("delete".equals(action)) {
-            int id = Integer.parseInt(request.getParameter("id"));
-            request.setAttribute("user", userService.getUserById(id));
-            request.getRequestDispatcher("delete.jsp").forward(request, response);
+            int id = Integer.parseInt(req.getParameter("id"));
+            req.setAttribute("user", userService.getUserById(id));
+            req.getRequestDispatcher("delete.jsp").forward(req, resp);
         } else {
-            request.setAttribute("users", userService.getAllUsers());
-            request.getRequestDispatcher("list.jsp").forward(request, response);
+            req.setAttribute("users", userService.getAllUsers());
+            req.getRequestDispatcher("list.jsp").forward(req, resp);
         }
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String action = request.getParameter("action");
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String method = req.getParameter("_method");
 
-        if ("add".equals(action)) {
-            userService.addUser(request.getParameter("username"), request.getParameter("password"), request.getParameter("email"));
-        } else if ("edit".equals(action)) {
-            int id = Integer.parseInt(request.getParameter("id"));
-            userService.updateUser(id, request.getParameter("username"), request.getParameter("password"), request.getParameter("email"));
-        } else if ("delete".equals(action)) {
-            int id = Integer.parseInt(request.getParameter("id"));
-            userService.deleteUser(id);
-        }
+        if ("PUT".equalsIgnoreCase(method)) {
+            doPut(req, resp);
+        } else if ("DELETE".equalsIgnoreCase(method)) {
+            doDelete(req, resp);
+        } else {
+                userService.addUser(req.getParameter("username"), req.getParameter("password"), req.getParameter("email"));
+            }
 
-        response.sendRedirect("users");
+        resp.sendRedirect("users");
+    }
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        int id = Integer.parseInt(req.getParameter("id"));
+        userService.updateUser(id, req.getParameter("username"), req.getParameter("password"), req.getParameter("email"));
     }
 
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        int id = Integer.parseInt(req.getParameter("id"));
+        userService.deleteUser(id);
+    }
 }

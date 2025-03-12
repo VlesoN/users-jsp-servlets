@@ -17,7 +17,7 @@
 <body>
 <h2>Редактировать пользователя</h2>
 <form action="users" method="post">
-    <input type="hidden" name="action" value="edit">
+    <input type="hidden" name="_method" value="PUT">
     <input type="hidden" name="id" value="<%= user.getId() %>">
     <label>Имя пользователя: <input type="text" name="username" value="<%= user.getUsername() %>" required></label><br>
     <label>Пароль: <input type="password" name="password" value="<%= user.getPassword() %>" required></label><br>
