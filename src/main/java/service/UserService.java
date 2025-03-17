@@ -1,114 +1,32 @@
 package service;
 
-import util.ConnectionConfig;
+import repository.UserRepository;
 import user.User;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+
 
 public class UserService {
 
-    public List<User> getAllUsers() {
-        List<User> users = new ArrayList<>();
-        String sql = """
-                SELECT id, username, password, email
-                FROM users_list
-                """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                users.add(new User(
-                        resultSet.getInt("id"),
-                        resultSet.getString("username"),
-                        resultSet.getString("password"),
-                        resultSet.getString("email")
-                ));
+    UserRepository userRepository = new UserRepository();
 
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Не удалось отобразить пользователей.", e);
-        }
-        return users;
+    public List<User> getAllUsers() {
+        return userRepository.getAll();
     }
 
     public void addUser(String username, String password, String email) {
-        String sql = """
-                INSERT INTO users_list("username", "password", "email") 
-                VALUES (?,?,?)
-                """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, password);
-            preparedStatement.setString(3, email);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Не удалось добавить пользователя", e);
-        }
+        userRepository.add(username,password,email);
     }
 
     public User getUserById(int id) {
-        String sql = """
-                SELECT id, username, password, email
-                FROM users_list
-                WHERE id = ?
-                """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setInt(1, id);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            User user = null;
-            while (resultSet.next()) {
-                user = new User(
-                        resultSet.getInt("id"),
-                        resultSet.getString("username"),
-                        resultSet.getString("password"),
-                        resultSet.getString("email")
-                );
-            }
-            return user;
-        } catch (SQLException e) {
-            throw new RuntimeException("Не удалось найти пользователя", e);
-        }
+        return userRepository.getById(id);
     }
 
     public void updateUser(int id, String username, String password, String email) {
-        String sql = """
-                UPDATE users_list
-                SET username = ?,
-                    password = ?,
-                    email = ?
-                WHERE id = ?
-                """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, password);
-            preparedStatement.setString(3, email);
-            preparedStatement.setInt(4, id);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Не удалось обновить данные пользователя", e);
-        }
+        userRepository.update(id,username,password,email);
     }
 
     public void deleteUser(int id) {
-        String sql = """
-                DELETE FROM users_list
-                WHERE id = ?
-                """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setInt(1, id);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Не удалось удалить пользователя", e);
-        }
+        userRepository.delete(id);
     }
+
 }
