@@ -1,48 +1,114 @@
 package service;
 
+import util.ConnectionConfig;
 import user.User;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class UserService {
-    private static List<User> users = new ArrayList<>();
-    private static int idCounter = 1;
-
-    static {
-        users.add(new User(idCounter++, "admin", "admin123", "admin@gmail.com"));
-    }
-    public UserService() {
-        if(users.isEmpty()) {
-            users.add(new User(idCounter++, "admin", "admin123", "admin@example.com"));
-        }
-    }
 
     public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = """
+                SELECT id, username, password, email
+                FROM users_list
+                """;
+        try (Connection connection = ConnectionConfig.open();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                users.add(new User(
+                        resultSet.getInt("id"),
+                        resultSet.getString("username"),
+                        resultSet.getString("password"),
+                        resultSet.getString("email")
+                ));
+
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось отобразить пользователей.", e);
+        }
         return users;
     }
 
     public void addUser(String username, String password, String email) {
-        users.add(new User(idCounter++, username, password, email));
+        String sql = """
+                INSERT INTO users_list("username", "password", "email") 
+                VALUES (?,?,?)
+                """;
+        try (Connection connection = ConnectionConfig.open();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
+            preparedStatement.setString(3, email);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось добавить пользователя", e);
+        }
     }
 
     public User getUserById(int id) {
-        return users.stream()
-                .filter(user -> user.getId() == id)
-                .findFirst()
-                .orElse(null);
+        String sql = """
+                SELECT id, username, password, email
+                FROM users_list
+                WHERE id = ?
+                """;
+        try (Connection connection = ConnectionConfig.open();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setInt(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            User user = null;
+            while (resultSet.next()) {
+                user = new User(
+                        resultSet.getInt("id"),
+                        resultSet.getString("username"),
+                        resultSet.getString("password"),
+                        resultSet.getString("email")
+                );
+            }
+            return user;
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось найти пользователя", e);
+        }
     }
 
     public void updateUser(int id, String username, String password, String email) {
-        User user = getUserById(id);
-        if (user != null) {
-            user.setUsername(username);
-            user.setPassword(password);
-            user.setEmail(email);
+        String sql = """
+                UPDATE users_list
+                SET username = ?,
+                    password = ?,
+                    email = ?
+                WHERE id = ?
+                """;
+        try (Connection connection = ConnectionConfig.open();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
+            preparedStatement.setString(3, email);
+            preparedStatement.setInt(4, id);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось обновить данные пользователя", e);
         }
     }
 
     public void deleteUser(int id) {
-        users.removeIf(user ->user.getId() == id);
+        String sql = """
+                DELETE FROM users_list
+                WHERE id = ?
+                """;
+        try (Connection connection = ConnectionConfig.open();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setInt(1, id);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось удалить пользователя", e);
+        }
     }
 }

@@ -49,13 +49,13 @@ public class UserServlet extends HttpServlet {
         resp.sendRedirect("users");
     }
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp)  {
         int id = Integer.parseInt(req.getParameter("id"));
         userService.updateUser(id, req.getParameter("username"), req.getParameter("password"), req.getParameter("email"));
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp)  {
         int id = Integer.parseInt(req.getParameter("id"));
         userService.deleteUser(id);
     }
