@@ -9,16 +9,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class UserRepository {
+
+    private static final Connection CONNECTION = ConnectionConfig.open();
+
+
     public List<User> getAll() {
         List<User> users = new ArrayList<>();
         String sql = """
                 SELECT id, username, password, email
                 FROM users_list
                 """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+        try (PreparedStatement preparedStatement = CONNECTION.prepareStatement(sql)) {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 users.add(new User(
@@ -27,7 +31,6 @@ public class UserRepository {
                         resultSet.getString("password"),
                         resultSet.getString("email")
                 ));
-
             }
         } catch (SQLException e) {
             throw new RuntimeException("Не удалось отобразить пользователей.", e);
@@ -40,25 +43,32 @@ public class UserRepository {
                 INSERT INTO users_list("username", "password", "email") 
                 VALUES (?,?,?)
                 """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+        try (PreparedStatement preparedStatement = CONNECTION.prepareStatement(sql)) {
+            CONNECTION.setAutoCommit(false);
+
             preparedStatement.setString(1, username);
             preparedStatement.setString(2, password);
             preparedStatement.setString(3, email);
+
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Не удалось добавить пользователя", e);
+            CONNECTION.commit();
+        } catch (Exception e) {
+                try {
+                    CONNECTION.rollback();
+                } catch (SQLException ex) {
+                    throw new RuntimeException("Ошибка при откате транзакции",ex);
+                }
+            throw new RuntimeException("Ошибка при добавлении пользователя",e);
         }
     }
 
-    public User getById(int id) {
+    public Optional<User> getById(int id) {
         String sql = """
                 SELECT id, username, password, email
                 FROM users_list
                 WHERE id = ?
                 """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+        try (PreparedStatement preparedStatement = CONNECTION.prepareStatement(sql)) {
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             User user = null;
@@ -70,7 +80,7 @@ public class UserRepository {
                         resultSet.getString("email")
                 );
             }
-            return user;
+            return Optional.ofNullable(user);
         } catch (SQLException e) {
             throw new RuntimeException("Не удалось найти пользователя", e);
         }
@@ -84,15 +94,23 @@ public class UserRepository {
                     email = ?
                 WHERE id = ?
                 """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+        try (PreparedStatement preparedStatement = CONNECTION.prepareStatement(sql)) {
+            CONNECTION.setAutoCommit(false);
+
             preparedStatement.setString(1, username);
             preparedStatement.setString(2, password);
             preparedStatement.setString(3, email);
             preparedStatement.setInt(4, id);
+
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Не удалось обновить данные пользователя", e);
+            CONNECTION.commit();
+        } catch (Exception e) {
+                try {
+                    CONNECTION.rollback();
+                } catch (SQLException ex) {
+                    throw new RuntimeException("Ошибка при откате транзакции",ex);
+                }
+                throw new RuntimeException("Не удалось изменить данные пользователя",e);
         }
     }
 
@@ -101,12 +119,50 @@ public class UserRepository {
                 DELETE FROM users_list
                 WHERE id = ?
                 """;
-        try (Connection connection = ConnectionConfig.open();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+        try (PreparedStatement preparedStatement = CONNECTION.prepareStatement(sql)) {
+            CONNECTION.setAutoCommit(false);
+
             preparedStatement.setInt(1, id);
             preparedStatement.executeUpdate();
+
+            CONNECTION.commit();
+        } catch (Exception e) {
+                try {
+                    CONNECTION.rollback();
+                } catch (SQLException ex) {
+                    throw new RuntimeException("Ошибка при откате транзакции",ex);
+                }
+                throw new RuntimeException("Ошибка при удалении пользователя",e);
+        }
+    }
+
+    public Optional<User> find(String username, String password) {
+        String sql = """
+                SELECT id,username,password,email
+                FROM users_list
+                WHERE username = ? AND password = ?
+                """;
+
+        try (PreparedStatement preparedStatement = CONNECTION.prepareStatement(sql)) {
+
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            User user = null;
+
+            if (resultSet.next()) {
+                user = new User(
+                        resultSet.getInt("id"),
+                        resultSet.getString("username"),
+                        resultSet.getString("password"),
+                        resultSet.getString("email")
+                );
+            }
+            return Optional.ofNullable(user);
         } catch (SQLException e) {
-            throw new RuntimeException("Не удалось удалить пользователя", e);
+            throw new RuntimeException("Ошибка при аутентификации", e);
         }
     }
 }

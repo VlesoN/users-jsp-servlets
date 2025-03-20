@@ -48,5 +48,8 @@
     <input type="hidden" name="action" value="add">
     <a href="users?action=add">Добавить нового пользователя</a>
 </form>
+<form action="logout" method="get">
+    <button type="submit">Выйти из аккаунта</button>
+</form>
 </body>
 </html>
