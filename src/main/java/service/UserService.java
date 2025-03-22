@@ -3,6 +3,7 @@ package service;
 import repository.UserRepository;
 import user.User;
 import java.util.List;
+import java.util.Optional;
 
 
 public class UserService {
@@ -17,7 +18,7 @@ public class UserService {
         userRepository.add(username,password,email);
     }
 
-    public User getUserById(int id) {
+    public Optional<User> getUserById(int id) {
         return userRepository.getById(id);
     }
 
@@ -27,6 +28,10 @@ public class UserService {
 
     public void deleteUser(int id) {
         userRepository.delete(id);
+    }
+
+    public Optional<User> authenticateUser(String username,String password) {
+        return userRepository.find(username,password);
     }
 
 }
